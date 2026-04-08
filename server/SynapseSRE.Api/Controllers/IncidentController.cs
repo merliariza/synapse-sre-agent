@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using SynapseSRE.Application.DTOs;
 using SynapseSRE.Domain.Entities;
 using SynapseSRE.Domain.Interfaces;
+using SynapseSRE.Api.Models; 
+using Microsoft.AspNetCore.Http; 
 
 namespace SynapseSRE.Api.Controllers;
 
@@ -10,11 +12,19 @@ public class IncidentController : BaseApiController
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IAgentService _aiAgent;
+    private readonly INotificationService _notificationService; 
 
-    public IncidentController(IUnitOfWork unitOfWork, IMapper mapper)
+    public IncidentController(
+        IUnitOfWork unitOfWork, 
+        IMapper mapper, 
+        IAgentService aiAgent,
+        INotificationService notificationService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _aiAgent = aiAgent;
+        _notificationService = notificationService;
     }
 
     [HttpGet]
@@ -36,14 +46,52 @@ public class IncidentController : BaseApiController
     }
 
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IncidentDto>> Post(IncidentDto dto)
+    [Consumes("multipart/form-data")] 
+    public async Task<ActionResult<IncidentDto>> Post([FromForm] IncidentCreateRequest request)
     {
-        var incident = _mapper.Map<Incident>(dto);
+        var incident = new Incident 
+        { 
+            Id = Guid.NewGuid(),
+            Title = request.Title, 
+            Description = request.Description,
+            Status = "Pending",
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        string logContent = "No log provided";
+        if (request.LogFile != null)
+        {
+            using var reader = new StreamReader(request.LogFile.OpenReadStream());
+            logContent = await reader.ReadToEndAsync();
+        }
+
+        var aiAnalysis = await _aiAgent.AnalyzeIncidentAsync(incident.Title, incident.Description, logContent);
+
+        var triage = new TriageAnalysis
+        {
+            Id = Guid.NewGuid(),
+            IncidentId = incident.Id,
+            AiSummary = aiAnalysis,
+            SeverityScore = aiAnalysis.Contains("Critical") || aiAnalysis.Contains("High") ? 5 : 3,
+            SuggestedFix = "Análisis automático generado por Agente SRE.",
+            ModelUsed = "gpt-4o-mini", 
+            ProcessedAt = DateTime.UtcNow
+        };
+
         _unitOfWork.Incidents.Add(incident);
+        _unitOfWork.TriageAnalyses.Add(triage);
+        
+        _unitOfWork.Logs.Add(new ActivityLog { 
+            Action = "IncidentCreated", 
+            Details = $"AI triage completed for: {incident.Id}" 
+        });
+
         await _unitOfWork.SaveAsync();
-        return CreatedAtAction(nameof(Get), new { id = incident.Id }, _mapper.Map<IncidentDto>(incident));
+
+        _notificationService.SendAlert($"🚨 Incidente: {incident.Title} | Severidad: {triage.SeverityScore}/5");
+
+        var resultDto = _mapper.Map<IncidentDto>(incident);
+        return CreatedAtAction(nameof(Get), new { id = incident.Id }, resultDto);
     }
 
     [HttpPut("{id}")]
@@ -54,7 +102,7 @@ public class IncidentController : BaseApiController
         var existing = await _unitOfWork.Incidents.GetByIdAsync(id);
         if (existing == null) return NotFound("Inicidente no encontrado.");
 
-        _mapper.Map(dto, existing); // Actualiza los campos
+        _mapper.Map(dto, existing); 
         _unitOfWork.Incidents.Update(existing);
         await _unitOfWork.SaveAsync();
         return Ok(dto);
