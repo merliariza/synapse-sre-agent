@@ -12,7 +12,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Incident> Incidents => Set<Incident>();
     public DbSet<TriageAnalysis> TriageAnalyses => Set<TriageAnalysis>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
-
+    public DbSet<IncidentAttachment> IncidentAttachments => Set<IncidentAttachment>();
 protected override void OnModelCreating(ModelBuilder modelBuilder)
 {
     base.OnModelCreating(modelBuilder);
