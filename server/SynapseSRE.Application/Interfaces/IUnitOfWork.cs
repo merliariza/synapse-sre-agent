@@ -1,4 +1,5 @@
 
+using SynapseSRE.Application.Interfaces;
 using SynapseSRE.Domain.Interfaces;
 
 public interface IUnitOfWork : IDisposable

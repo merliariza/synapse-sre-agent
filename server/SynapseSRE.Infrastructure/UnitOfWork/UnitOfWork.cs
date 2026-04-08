@@ -1,3 +1,4 @@
+using SynapseSRE.Application.Interfaces;
 using SynapseSRE.Domain.Interfaces;
 using SynapseSRE.Infrastructure.Repositories;
 

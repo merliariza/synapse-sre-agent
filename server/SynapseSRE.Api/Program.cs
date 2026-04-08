@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using SynapseSRE.Infrastructure.Persistence;
 using SynapseSRE.Domain.Interfaces;
-using SynapseSRE.Infrastructure.Repositories; // Asegúrate de tener esta carpeta
+using SynapseSRE.Infrastructure.Repositories; 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using SynapseSRE.Application.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +15,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IUserService, UserService>();
 var jwtKey = builder.Configuration["Jwt:Key"];
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
