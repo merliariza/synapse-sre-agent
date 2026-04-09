@@ -1,0 +1,26 @@
+.login-page { background: var(--bg-base); }
+
+.text-accent { color: var(--accent); }
+
+.mode-tabs {
+  background: var(--bg-base);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.tab-btn {
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.15s;
+
+  &.active {
+    background: var(--bg-card);
+    color: #fff;
+  }
+}

@@ -1,1 +1,118 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  --bg-base:    #0f1117;
+  --bg-surface: #1a1d27;
+  --bg-card:    #1f2235;
+  --border:     #2a2d3e;
+  --text-primary:   #e5e7eb;
+  --text-secondary: #9ca3af;
+  --text-muted:     #6b7280;
+  --accent:     #6366f1;
+  --accent-hover:   #5254cc;
+  --success:    #10b981;
+  --warning:    #f59e0b;
+  --danger:     #ef4444;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+}
+
+.card-dark {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.form-control, .form-select {
+  background: var(--bg-base) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+  &:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.2) !important;
+  }
+  &::placeholder { color: var(--text-muted) !important; }
+}
+
+textarea.form-control { resize: vertical; }
+
+.btn-accent {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  &:hover:not(:disabled) { background: var(--accent-hover); color: #fff; }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+}
+
+.btn-success-soft {
+  background: #059669;
+  border: none;
+  color: #fff;
+  &:hover:not(:disabled) { background: #047857; color: #fff; }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+}
+
+.badge-pending  { background: #2d2008; color: #f59e0b; }
+.badge-resolved { background: #052e16; color: #10b981; }
+
+.score-low    { background: #052e16; color: #10b981; }
+.score-medium { background: #2d2008; color: #f59e0b; }
+.score-high   { background: #2d1b1b; color: #ef4444; }
+
+.alert-dark-error   { background: #2d1b1b; border: 1px solid #7f1d1d; color: #f87171; border-radius: 8px; }
+.alert-dark-success { background: #052e16; border: 1px solid #14532d; color: #4ade80; border-radius: 8px; }
+
+.spinner-sm {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.app-header {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.875rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-logo {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  .brand-icon { color: var(--accent); font-size: 1.3rem; }
+}
+
+.ai-report {
+  white-space: pre-wrap;
+  font-family: system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.75;
+  color: var(--text-primary);
+  margin: 0;
+  padding: 1.25rem;
+}
+
+.table-dark-custom {
+  --bs-table-bg: transparent;
+  --bs-table-hover-bg: #1f2235;
+  --bs-table-color: var(--text-primary);
+  --bs-table-border-color: var(--border);
+  cursor: pointer;
+  th { color: var(--text-muted); font-size: 0.8rem; font-weight: 500; border-color: var(--border); }
+  td { border-color: var(--border); font-size: 0.9rem; vertical-align: middle; }
+}

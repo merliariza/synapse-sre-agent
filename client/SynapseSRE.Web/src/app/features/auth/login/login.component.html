@@ -1,0 +1,63 @@
+<div class="login-page d-flex align-items-center justify-content-center vh-100">
+  <div class="login-box card-dark p-4" style="width:100%;max-width:420px">
+
+    <div class="text-center mb-4">
+      <i class="bi bi-hexagon-fill text-accent fs-1"></i>
+      <h1 class="fs-4 fw-semibold text-white mt-2 mb-1">SynapseSRE</h1>
+      <p class="text-muted small mb-0">Intelligent Incident Triage Agent</p>
+    </div>
+
+    <div class="mode-tabs d-flex mb-4">
+      <button class="tab-btn flex-fill" [class.active]="mode() === 'login'" (click)="setMode('login')">
+        Sign in
+      </button>
+      <button class="tab-btn flex-fill" [class.active]="mode() === 'register'" (click)="setMode('register')">
+        Register
+      </button>
+    </div>
+
+    @if (error()) {
+      <div class="alert-dark-error p-3 mb-3 small">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error() }}
+      </div>
+    }
+    @if (success()) {
+      <div class="alert-dark-success p-3 mb-3 small">
+        <i class="bi bi-check-circle-fill me-2"></i>{{ success() }}
+      </div>
+    }
+
+    <div class="d-flex flex-column gap-3">
+      <div>
+        <label class="form-label text-secondary small">Username</label>
+        <input class="form-control" [(ngModel)]="username"
+          placeholder="sreteam" [disabled]="loading()" />
+      </div>
+
+      @if (mode() === 'register') {
+        <div>
+          <label class="form-label text-secondary small">Email</label>
+          <input class="form-control" [(ngModel)]="email"
+            type="email" placeholder="you@company.com" [disabled]="loading()" />
+        </div>
+      }
+
+      <div>
+        <label class="form-label text-secondary small">Password</label>
+        <input class="form-control" [(ngModel)]="password"
+          type="password" placeholder="••••••••"
+          [disabled]="loading()" (keyup.enter)="submit()" />
+      </div>
+
+      <button class="btn btn-accent btn-lg w-100 mt-1" (click)="submit()" [disabled]="loading()">
+        @if (loading()) {
+          <span class="spinner-sm me-2"></span>
+          {{ mode() === 'login' ? 'Signing in...' : 'Registering...' }}
+        } @else {
+          {{ mode() === 'login' ? 'Sign in' : 'Create account' }}
+        }
+      </button>
+    </div>
+
+  </div>
+</div>

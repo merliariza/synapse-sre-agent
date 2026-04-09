@@ -1,0 +1,20 @@
+.stat-card {
+  border-radius: 10px;
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    &.warning { color: var(--warning); }
+    &.success { color: var(--success); }
+    &.danger  { color: var(--danger);  }
+  }
+  .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+}
+
+.table-header {
+  border-bottom: 1px solid var(--border);
+}

@@ -1,0 +1,83 @@
+<div class="min-vh-100">
+
+  <header class="app-header">
+    <a routerLink="/dashboard" class="brand-logo text-decoration-none">
+      <i class="bi bi-hexagon-fill brand-icon"></i>
+      SynapseSRE
+    </a>
+    <a routerLink="/dashboard" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Dashboard
+    </a>
+  </header>
+
+  <main class="container py-4" style="max-width:700px">
+
+    <div class="mb-4">
+      <h2 class="text-white fw-semibold mb-1">Report Incident</h2>
+      <p class="text-muted small">
+        The AI agent will analyze your logs and generate a full triage report automatically.
+      </p>
+    </div>
+
+    @if (error()) {
+      <div class="alert-dark-error p-3 mb-4 small">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error() }}
+      </div>
+    }
+
+    <div class="card-dark p-4 d-flex flex-column gap-4">
+
+      <div>
+        <label class="form-label text-secondary small fw-medium">
+          Incident title <span class="text-danger">*</span>
+        </label>
+        <input class="form-control" [(ngModel)]="title"
+          placeholder="e.g. API Gateway timeout on checkout" [disabled]="loading()" />
+      </div>
+
+      <div>
+        <label class="form-label text-secondary small fw-medium">
+          Description <span class="text-danger">*</span>
+        </label>
+        <textarea class="form-control" [(ngModel)]="description" rows="4"
+          placeholder="Describe what happened, when it started, and user impact..."
+          [disabled]="loading()"></textarea>
+      </div>
+
+      <div>
+        <label class="form-label text-secondary small fw-medium">
+          Log file
+          <span class="text-muted fw-normal ms-1">optional · .log .txt .json · max 5 MB</span>
+        </label>
+
+        @if (selectedFile()) {
+          <div class="file-attached d-flex align-items-center gap-3 p-3">
+            <i class="bi bi-file-earmark-text text-accent fs-5"></i>
+            <span class="text-white small flex-fill">{{ selectedFile()!.name }}</span>
+            <button class="btn btn-sm btn-outline-danger" (click)="removeFile()">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        } @else {
+          <div class="file-drop" (click)="fileInput.click()">
+            <i class="bi bi-upload fs-4 text-muted d-block mb-2"></i>
+            <span class="text-muted small">Click to attach log file</span>
+          </div>
+        }
+
+        <input #fileInput type="file" accept=".log,.txt,.json"
+          class="d-none" (change)="onFile($event)" />
+      </div>
+
+      <button class="btn btn-accent btn-lg w-100" (click)="submit()" [disabled]="loading()">
+        @if (loading()) {
+          <span class="spinner-sm me-2"></span>
+          Analyzing with AI — this may take 15–30s...
+        } @else {
+          <i class="bi bi-cpu me-2"></i>Submit & Triage
+        }
+      </button>
+
+    </div>
+  </main>
+</div>

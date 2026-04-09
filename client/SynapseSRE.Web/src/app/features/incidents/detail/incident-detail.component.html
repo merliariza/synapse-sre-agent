@@ -1,0 +1,117 @@
+<div class="min-vh-100">
+
+  <header class="app-header">
+    <a routerLink="/dashboard" class="brand-logo text-decoration-none">
+      <i class="bi bi-hexagon-fill brand-icon"></i>
+      SynapseSRE
+    </a>
+    <a routerLink="/dashboard" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Dashboard
+    </a>
+  </header>
+
+  <main class="container-xl py-4 px-4">
+
+    @if (loading()) {
+      <div class="text-center py-5 text-muted">
+        <div class="spinner-border spinner-border-sm me-2"></div>
+        Loading incident...
+      </div>
+    }
+
+    @if (!loading() && incident()) {
+
+      <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+        <div>
+          <h2 class="text-white fw-semibold mb-1">{{ incident()!.title }}</h2>
+          <p class="text-muted mb-0">{{ incident()!.description }}</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center flex-shrink-0">
+          <span class="badge rounded-pill px-3 py-2"
+            [class]="incident()!.status === 'Resolved' ? 'badge-resolved' : 'badge-pending'">
+            {{ incident()!.status }}
+          </span>
+          @if (incident()!.triageAnalysis) {
+            <span class="badge rounded-pill px-3 py-2"
+              [class]="scoreClass(incident()!.triageAnalysis!.severityScore)">
+              Severity {{ incident()!.triageAnalysis!.severityScore }}/5
+            </span>
+          }
+        </div>
+      </div>
+
+      @if (incident()!.triageAnalysis) {
+        <div class="card-dark mb-4">
+          <div class="report-header d-flex align-items-center justify-content-between px-4 py-3">
+            <span class="text-white fw-medium">
+              <i class="bi bi-cpu me-2 text-accent"></i>AI Triage Report
+            </span>
+            <span class="text-muted small">
+              <i class="bi bi-clock me-1"></i>
+              {{ incident()!.triageAnalysis!.processedAt | date:'MMM d, HH:mm' }}
+              &nbsp;·&nbsp;
+              {{ incident()!.triageAnalysis!.modelUsed }}
+            </span>
+          </div>
+          <pre class="ai-report">{{ incident()!.triageAnalysis!.aiSummary }}</pre>
+        </div>
+      }
+
+      @if (incident()!.status !== 'Resolved') {
+        <div class="card-dark p-4">
+          <h5 class="text-white mb-3">
+            <i class="bi bi-check2-circle me-2 text-success-soft"></i>Resolve Incident
+          </h5>
+
+          @if (resolveError()) {
+            <div class="alert-dark-error p-3 mb-3 small">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ resolveError() }}
+            </div>
+          }
+          @if (resolveSuccess()) {
+            <div class="alert-dark-success p-3 mb-3 small">{{ resolveSuccess() }}</div>
+          }
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label text-secondary small">Resolved by</label>
+              <input class="form-control" [(ngModel)]="resolvedBy"
+                placeholder="SRE Team" [disabled]="resolving()" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-secondary small">
+                Reporter email
+                <span class="text-muted fw-normal">(notified on resolution)</span>
+              </label>
+              <input class="form-control" [(ngModel)]="reporterEmail"
+                type="email" placeholder="reporter@company.com" [disabled]="resolving()" />
+            </div>
+            <div class="col-12">
+              <label class="form-label text-secondary small">Resolution notes</label>
+              <textarea class="form-control" [(ngModel)]="resolutionNotes" rows="3"
+                placeholder="Describe what was done to fix this..." [disabled]="resolving()">
+              </textarea>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-success-soft px-4" (click)="resolve()" [disabled]="resolving()">
+                @if (resolving()) {
+                  <span class="spinner-sm me-2"></span> Resolving...
+                } @else {
+                  <i class="bi bi-check-lg me-2"></i>Mark as Resolved
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="alert-dark-success p-3 d-flex align-items-center gap-2">
+          <i class="bi bi-check-circle-fill fs-5"></i>
+          <span>
+            Resolved on <strong>{{ incident()!.resolvedAt | date:'MMM d, yyyy · HH:mm' }}</strong>
+          </span>
+        </div>
+      }
+
+    }
+  </main>
+</div>

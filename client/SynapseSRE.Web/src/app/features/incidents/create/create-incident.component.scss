@@ -1,0 +1,17 @@
+.file-drop {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s;
+
+  &:hover { border-color: var(--accent); }
+}
+
+.file-attached {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-base);
+  .text-accent { color: var(--accent); }
+}
