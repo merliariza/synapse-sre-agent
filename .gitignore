@@ -40,10 +40,17 @@ pgdata/
 
 # Archivos de secretos y variables de entorno
 .env
+*.env
+!.env.example
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+#Configuration
+appsettings.Development.json
+!.env.example
+!appsettings.json
 
 # === [Sistema Operativo] ===
 .DS_Store

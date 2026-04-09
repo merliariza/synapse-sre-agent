@@ -1,108 +1,161 @@
+using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using Serilog;
+using SynapseSRE.Application.Interfaces;
+using SynapseSRE.Domain.Interfaces;
 using SynapseSRE.Infrastructure.Persistence;
 using SynapseSRE.Infrastructure.Repositories;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
+using SynapseSRE.Infrastructure.Services;
 using System.Text;
-using SynapseSRE.Application.Interfaces;
-using Microsoft.OpenApi.Models;
+
+if (File.Exists(".env"))
+Env.Load();
+
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("Service", "SynapseSRE.Api")
+    .WriteTo.Console(outputTemplate:
+        "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog();
 
+// ── Database ──────────────────────────────────────────────────────────────────
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+    throw new Exception("❌ ConnectionString no configurada. Revisa el .env");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+// ── Services ──────────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<INotificationService, ConsoleNotificationService>();
+builder.Services.AddScoped<IAgentService, OpenAIEdgeAgent>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddHttpClient();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+// ── OpenTelemetry ─────────────────────────────────────────────────────────────
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(r => r.AddService("SynapseSRE"))
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddSource("SynapseSRE.Triage")
+        .AddSource("SynapseSRE.Ticket")
+        .AddSource("SynapseSRE.Notify")
+        .AddConsoleExporter())
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddConsoleExporter());
+
+// ── CORS ──────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
-    {
-        policy.WithOrigins("http://localhost:4200") 
+        policy.WithOrigins(
+                "http://localhost:4200",
+                "http://synapse_frontend:80",
+                "http://localhost:80")
               .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
+              .AllowAnyHeader());
 });
 
+// ── JWT ───────────────────────────────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrEmpty(jwtKey))
+    throw new Exception("❌ JWT Key no configurada. Revisa el .env");
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ValidateIssuer = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidateAudience = true,
             ValidAudience = builder.Configuration["Jwt:Audience"],
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero 
+            ClockSkew = TimeSpan.Zero
         };
     });
 
+// ── Controllers + Swagger ─────────────────────────────────────────────────────
 builder.Services.AddControllers();
-
-builder.Services.AddOpenApi(options =>
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
 {
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    c.SwaggerDoc("v1", new OpenApiInfo
     {
-        document.Info.Title = "SynapseSRE API";
-        document.Info.Version = "v1";
-        document.Components ??= new OpenApiComponents();
-        document.Components.SecuritySchemes.Add("Bearer", new OpenApiSecurityScheme
+        Title = "SynapseSRE AI API",
+        Version = "v1",
+        Description = "Agente SRE de triaje automático de incidentes"
+    });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Ingresa: Bearer {tu_token}",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
         {
-            Name = "Authorization",
-            Type = SecuritySchemeType.Http,
-            Scheme = "Bearer",
-            BearerFormat = "JWT",
-            In = ParameterLocation.Header,
-            Description = "Copia el Token JWT aquí: Bearer {tu_token}"
-        });
-        document.SecurityRequirements.Add(new OpenApiSecurityRequirement
-        {
+            new OpenApiSecurityScheme
             {
-                new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-                },
-                Array.Empty<string>()
-            }
-        });
-        return Task.CompletedTask;
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey
+            },
+            new List<string>()
+        }
     });
 });
 
+// ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
+// ── Migrations automáticas ────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
-    try {
-        var context = services.GetRequiredService<ApplicationDbContext>();
+    try
+    {
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         context.Database.Migrate();
-        Console.WriteLine("✅ Base de datos migrada correctamente.");
-    } catch (Exception ex) {
-        Console.WriteLine($"❌ Error al migrar la DB: {ex.Message}");
+        Log.Information("✅ Base de datos migrada correctamente");
+    }
+    catch (Exception ex)
+    {
+        Log.Error("❌ DB migration error: {Error}", ex.Message);
     }
 }
 
-if (app.Environment.IsDevelopment())
+// ── Middleware pipeline ───────────────────────────────────────────────────────
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.MapOpenApi();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "SynapseSRE API v1");
+    c.RoutePrefix = "swagger";
+});
 
 app.UseHttpsRedirection();
-
-app.UseCors("AllowAngular"); 
-
-app.UseAuthentication(); 
+app.UseCors("AllowAngular");
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
+Log.Information("🚀 SynapseSRE API iniciada");
 app.Run();

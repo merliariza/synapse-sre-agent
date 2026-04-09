@@ -1,0 +1,23 @@
+# Git
+.git
+.gitignore
+
+# Secretos
+.env
+.env.*
+!.env.example
+
+# Build outputs locales
+server/**/bin
+server/**/obj
+
+# Frontend completo (el api no lo necesita)
+client/
+
+# VS files
+**/.vs
+**/*.user
+**/.vscode
+
+# Logs
+**/*.log

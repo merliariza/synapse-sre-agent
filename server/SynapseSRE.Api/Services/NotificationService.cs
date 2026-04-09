@@ -1,9 +1,159 @@
-public interface INotificationService {
-    void SendAlert(string message);
-}
+using System.Net;
+using System.Net.Mail;
+using System.Text.Json;
+using Microsoft.Extensions.Configuration;
+using SynapseSRE.Domain.Interfaces;
 
-public class ConsoleNotificationService : INotificationService {
-    public void SendAlert(string message) {
-        Console.WriteLine($"\n[ALERTA SRE] 📢 {message}\n");
+namespace SynapseSRE.Infrastructure.Services;
+
+public class NotificationService : INotificationService
+{
+    private readonly IConfiguration _config;
+    private readonly ILogger<NotificationService> _logger;
+    private readonly HttpClient _http;
+
+    public NotificationService(IConfiguration config, ILogger<NotificationService> logger, IHttpClientFactory factory)
+    {
+        _config = config;
+        _logger = logger;
+        _http = factory.CreateClient();
     }
+
+    public async Task SendTeamAlertAsync(string incidentTitle, int severity, Guid incidentId, string aiSummary)
+    {
+        var emoji = severity >= 4 ? "🔴" : severity == 3 ? "🟡" : "🟢";
+
+     
+        await SendEmailAsync(
+            to: _config["Notifications:TeamEmail"] ?? "team@synapsesre.local",
+            subject: $"{emoji} [{severity}/5] Nuevo incidente: {incidentTitle}",
+            body: BuildTeamEmailBody(incidentTitle, severity, incidentId, aiSummary)
+        );
+
+        await SendSlackWebhookAsync(new
+        {
+            text = $"{emoji} *Nuevo incidente SRE*",
+            attachments = new[]
+            {
+                new
+                {
+                    color = severity >= 4 ? "#E24B4A" : severity == 3 ? "#EF9F27" : "#1D9E75",
+                    fields = new[]
+                    {
+                        new { title = "Incidente", value = incidentTitle, @short = false },
+                        new { title = "Severidad", value = $"{severity}/5", @short = true },
+                        new { title = "ID", value = incidentId.ToString()[..8], @short = true },
+                        new { title = "Resumen IA", value = aiSummary[..Math.Min(200, aiSummary.Length)] + "...", @short = false }
+                    }
+                }
+            }
+        });
+
+        _logger.LogInformation("[NOTIFY] Team alerted for incident {IncidentId} severity {Severity}", incidentId, severity);
+    }
+
+    public async Task SendReporterNotificationAsync(string reporterEmail, string incidentTitle, Guid incidentId)
+    {
+        await SendEmailAsync(
+            to: reporterEmail,
+            subject: $"✅ Tu incidente ha sido resuelto: {incidentTitle}",
+            body: BuildReporterEmailBody(incidentTitle, incidentId)
+        );
+
+        _logger.LogInformation("[NOTIFY] Reporter notified for resolved incident {IncidentId}", incidentId);
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private async Task SendEmailAsync(string to, string subject, string body)
+    {
+        var smtpHost = _config["Notifications:SmtpHost"];
+
+        if (string.IsNullOrEmpty(smtpHost))
+        {
+            _logger.LogInformation("[EMAIL MOCK] To: {To} | Subject: {Subject}", to, subject);
+            Console.WriteLine($"\n{'='*60}");
+            Console.WriteLine($"📧 EMAIL MOCK");
+            Console.WriteLine($"   To:      {to}");
+            Console.WriteLine($"   Subject: {subject}");
+            Console.WriteLine($"   Body preview: {body[..Math.Min(120, body.Length)]}...");
+            Console.WriteLine($"{'='*60}\n");
+            return;
+        }
+        try
+        {
+            using var client = new SmtpClient(smtpHost)
+            {
+                Port = int.Parse(_config["Notifications:SmtpPort"] ?? "587"),
+                Credentials = new NetworkCredential(
+                    _config["Notifications:SmtpUser"],
+                    _config["Notifications:SmtpPass"]),
+                EnableSsl = true
+            };
+
+            var mail = new MailMessage
+            {
+                From = new MailAddress(_config["Notifications:FromEmail"] ?? "noreply@synapsesre.io"),
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = true
+            };
+            mail.To.Add(to);
+
+            await client.SendMailAsync(mail);
+            _logger.LogInformation("[EMAIL] Sent to {To}", to);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("[EMAIL] Failed: {Error} — falling back to mock", ex.Message);
+        }
+    }
+
+    private async Task SendSlackWebhookAsync(object payload)
+    {
+        var webhookUrl = _config["Notifications:SlackWebhookUrl"];
+
+        if (string.IsNullOrEmpty(webhookUrl))
+        {
+            _logger.LogInformation("[SLACK MOCK] Payload: {Payload}", JsonSerializer.Serialize(payload));
+            Console.WriteLine($"\n{'='*60}");
+            Console.WriteLine($"🔔 SLACK MOCK → {JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true })}");
+            Console.WriteLine($"{'='*60}\n");
+            return;
+        }
+
+        try
+        {
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            var response = await _http.PostAsync(webhookUrl, content);
+            _logger.LogInformation("[SLACK] Webhook sent, status: {Status}", response.StatusCode);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("[SLACK] Webhook failed: {Error}", ex.Message);
+        }
+    }
+
+    private static string BuildTeamEmailBody(string title, int severity, Guid id, string summary) => $"""
+        <html><body style="font-family: monospace; background: #0d1117; color: #c9d1d9; padding: 24px;">
+        <h2 style="color: #f85149;">🚨 SynapseSRE — Nuevo Incidente</h2>
+        <table style="border-collapse: collapse; width: 100%;">
+            <tr><td style="padding: 8px; color: #8b949e;">Título</td><td style="padding: 8px;">{title}</td></tr>
+            <tr><td style="padding: 8px; color: #8b949e;">Severidad</td><td style="padding: 8px; color: {(severity >= 4 ? "#f85149" : severity == 3 ? "#d29922" : "#3fb950")};">{severity}/5</td></tr>
+            <tr><td style="padding: 8px; color: #8b949e;">ID</td><td style="padding: 8px;">{id}</td></tr>
+        </table>
+        <h3 style="color: #58a6ff;">Análisis IA</h3>
+        <pre style="background: #161b22; padding: 16px; border-radius: 6px; overflow: auto;">{summary}</pre>
+        <p style="color: #8b949e;">— SynapseSRE Agent</p>
+        </body></html>
+        """;
+
+    private static string BuildReporterEmailBody(string title, Guid id) => $"""
+        <html><body style="font-family: sans-serif; padding: 24px;">
+        <h2 style="color: #1D9E75;">✅ Tu incidente fue resuelto</h2>
+        <p>El incidente <strong>{title}</strong> (ID: {id}) ha sido marcado como resuelto por el equipo técnico.</p>
+        <p style="color: #888;">Gracias por reportarlo. — SynapseSRE</p>
+        </body></html>
+        """;
 }

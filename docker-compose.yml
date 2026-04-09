@@ -12,27 +12,46 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: server/SynapseSRE.Api/Dockerfile
     container_name: synapse_api
     restart: always
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
       - Jwt__Key=${JWT_KEY}
       - Jwt__Issuer=${JWT_ISSUER}
       - Jwt__Audience=${JWT_AUDIENCE}
       - Jwt__DurationInMinutes=${JWT_DURATION}
+      - AI__ProviderKey=${AI__ProviderKey}
+      - AI__BaseUrl=${AI__BaseUrl}
+      - AI__ModelId=${AI__ModelId}
+      - Notifications__TeamEmail=${TEAM_EMAIL}
+      - Notifications__SlackWebhookUrl=${SLACK_WEBHOOK_URL}
+      - Notifications__SmtpHost=${SMTP_HOST}
+      - Notifications__SmtpPort=${SMTP_PORT}
+      - Notifications__SmtpUser=${SMTP_USER}
+      - Notifications__SmtpPass=${SMTP_PASS}
     ports:
       - "5210:8080"
     depends_on:
       db:
         condition: service_healthy
+
+  frontend:
+    build:
+      context: ./client/SynapseSRE.Web
+      dockerfile: Dockerfile
+    container_name: synapse_frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api
 
 volumes:
   postgres_data:

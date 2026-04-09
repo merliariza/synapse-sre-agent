@@ -11,7 +11,7 @@ public class ActivityLogConfiguration : IEntityTypeConfiguration<ActivityLog>
         builder.Property(a => a.Id).HasColumnType("uuid").HasDefaultValueSql("gen_random_uuid()");
 
         builder.Property(a => a.Details)
-               .HasColumnType("jsonb"); 
+               .HasColumnType("text"); 
 
         builder.Property(a => a.Action).IsRequired();
     }

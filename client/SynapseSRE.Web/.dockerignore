@@ -1,0 +1,21 @@
+# Dependencias — se instalan en el build
+node_modules
+npm-debug.log
+
+# Angular cache
+.angular
+
+# Build output local
+dist
+
+# VS files
+.vscode
+*.user
+
+# Git
+.git
+.gitignore
+
+# Secretos
+.env
+.env.*
