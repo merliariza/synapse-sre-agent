@@ -9,26 +9,26 @@ using SynapseSRE.Domain.Interfaces;
 
 namespace SynapseSRE.Api.Controllers;
 
-public class IncidentController : BaseApiController
+public class IncidentsController : BaseApiController
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly IAgentService _aiAgent;
     private readonly INotificationService _notificationService;
     private readonly IConfiguration _config;
-    private readonly ILogger<IncidentController> _logger;
+    private readonly ILogger<IncidentsController> _logger;
 
     private static readonly ActivitySource TriageSource = new("SynapseSRE.Triage");
     private static readonly ActivitySource TicketSource  = new("SynapseSRE.Ticket");
     private static readonly ActivitySource NotifySource  = new("SynapseSRE.Notify");
 
-    public IncidentController(
+    public IncidentsController(
         IUnitOfWork unitOfWork,
         IMapper mapper,
         IAgentService aiAgent,
         INotificationService notificationService,
         IConfiguration config,
-        ILogger<IncidentController> logger)
+        ILogger<IncidentsController> logger)
     {
         _unitOfWork          = unitOfWork;
         _mapper              = mapper;

@@ -4,8 +4,8 @@
   --bg-card:    #1f2235;
   --border:     #2a2d3e;
   --text-primary:   #e5e7eb;
-  --text-secondary: #9ca3af;
-  --text-muted:     #6b7280;
+--text-secondary: #d1d5db;
+  --text-muted:     #9ca3af;
   --accent:     #6366f1;
   --accent-hover:   #5254cc;
   --success:    #10b981;
@@ -109,10 +109,25 @@ textarea.form-control { resize: vertical; }
 
 .table-dark-custom {
   --bs-table-bg: transparent;
-  --bs-table-hover-bg: #1f2235;
+  --bs-table-hover-bg: #7f7f88;
   --bs-table-color: var(--text-primary);
   --bs-table-border-color: var(--border);
   cursor: pointer;
   th { color: var(--text-muted); font-size: 0.8rem; font-weight: 500; border-color: var(--border); }
   td { border-color: var(--border); font-size: 0.9rem; vertical-align: middle; }
+}
+
+.text-muted {
+  color: var(--text-secondary) !important;
+}
+
+.card-dark.text-center.py-5 {
+  .bi-inbox {
+    color: var(--accent) !important; 
+    opacity: 0.8;
+  }
+  p.text-muted {
+    color: var(--text-primary) !important; 
+    font-weight: 500;
+  }
 }

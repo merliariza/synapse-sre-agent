@@ -37,4 +37,24 @@ export class AuthService {
   getToken(): string | null {
     return localStorage.getItem(this.TOKEN_KEY);
   }
+
+  getCurrentUser(): { id: string; username: string } | null {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+
+      const id =
+        payload['nameid'] ||
+        payload['sub'] ||
+        payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+      const username =
+        payload['unique_name'] ||
+        payload['name'] ||
+        payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
+      return id ? { id, username } : null;
+    } catch {
+      return null;
+    }
+  }
 }

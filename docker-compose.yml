@@ -31,12 +31,16 @@ services:
       - AI__ProviderKey=${AI__ProviderKey}
       - AI__BaseUrl=${AI__BaseUrl}
       - AI__ModelId=${AI__ModelId}
-      - Notifications__TeamEmail=${TEAM_EMAIL}
-      - Notifications__SlackWebhookUrl=${SLACK_WEBHOOK_URL}
-      - Notifications__SmtpHost=${SMTP_HOST}
-      - Notifications__SmtpPort=${SMTP_PORT}
-      - Notifications__SmtpUser=${SMTP_USER}
-      - Notifications__SmtpPass=${SMTP_PASS}
+      - Notifications__TeamEmail=${Notifications__TeamEmail}
+      - Notifications__SlackWebhookUrl=${Notifications__SlackWebhookUrl}
+      - Notifications__SmtpHost=${Notifications__SmtpHost}
+      - Notifications__SmtpPort=${Notifications__SmtpPort}
+      - Notifications__SmtpUser=${Notifications__SmtpUser}
+      - Notifications__SmtpPass=${Notifications__SmtpPass}
+      - Notifications__FromEmail=${Notifications__FromEmail}
+      - Notifications__GitHubToken=${Notifications__GitHubToken}
+      - Notifications__GitHubOwner=${Notifications__GitHubOwner}
+      - Notifications__GitHubRepo=${Notifications__GitHubRepo}
     ports:
       - "5210:8080"
     depends_on:
