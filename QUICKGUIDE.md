@@ -15,7 +15,7 @@ Get SynapseSRE running in under 5 minutes.
 
 ```bash
 git clone https://github.com/merliariza/synapse-sre-agent.git
-cd SynapseSRE-Project
+cd synapse-sre-agent
 ```
 
 ### 2. Configure environment
