@@ -35,6 +35,8 @@ SynapseSRE is an AI-powered SRE agent that automates the full incident lifecycle
 ---
 
 ## Project Structure
+
+```text
 SynapseSRE-Project/
 ├── client/
 │   └── SynapseSRE.Web/          # Angular 18 frontend
@@ -46,8 +48,7 @@ SynapseSRE-Project/
 ├── docker-compose.yml
 ├── .env.example
 └── README.md
-
----
+```
 
 ## Quick Start
 
@@ -67,6 +68,7 @@ See [QUICKGUIDE.md](QUICKGUIDE.md) for full step-by-step instructions.
 ---
 
 ## E2E Flow
+```text
 User submits incident (title + description + log file)
 │
 ▼
@@ -86,7 +88,7 @@ PATCH /incidents/{id}/resolve
 │
 ▼
 [RESOLVED] Original reporter notified — loop closed
-
+```
 ---
 
 ## Key Features

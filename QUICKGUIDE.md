@@ -108,13 +108,13 @@ docker logs synapse_api -f
 ```
 
 You should see all 5 pipeline stages:
-
+```text
 [INGEST]   Receiving incident...
 [TRIAGE]   Analysis complete. Severity: 4/5
 [TICKET]   Incident persisted
 [NOTIFY]   Team alerted
 [RESOLVED] ReporterNotified=True
-
+```
 ---
 
 ## Stopping the stack

@@ -70,13 +70,14 @@ All 5 stages are instrumented with OpenTelemetry `ActivitySource` and Serilog st
 | Resolved | `SynapseSRE.Notify` / `stage.resolved_notify_reporter` | `[RESOLVED]` | Reporter notified, resolved by |
 
 ### Sample log output
+```text
 [00:39:16 INF] [INGEST]   Receiving incident: API Gateway timeout {"Service":"SynapseSRE.Api"}
 [00:39:16 INF] [TRIAGE]   Sending to AI agent. Model: openai/gpt-4o-mini
 [00:39:28 INF] [TRIAGE]   Analysis complete. Severity: 4/5 | IncidentId: 55f93c82
 [00:39:28 INF] [TICKET]   Incident persisted. TicketId: 55f93c82
 [00:39:28 INF] [NOTIFY]   Team alerted for incident 55f93c82
 [00:46:41 INF] [RESOLVED] IncidentId=55f93c82 ResolvedBy=SRE Team ReporterNotified=True
-
+```
 ---
 
 ## Safety Measures
@@ -107,9 +108,8 @@ Implemented in `IncidentController.SanitizeInput()`:
 
 ## Known Limitations
 
-- The AI call is synchronous — under high load, response times increase proportionally
-- OpenRouter free tier models have rate limits that may cause delays during demos
-- Mock notifications (no real SMTP/Slack configured) are logged to console only
-- No deduplication — identical incidents create separate tickets
+- GitHub Issues integration is configured but requires a valid `GITHUB_TOKEN` 
+  with `repo` scope — falls back to mock mode if not set
+- SMTP email requires valid credentials — falls back to console mock if not configured
 
 See [SCALING.md](SCALING.md) for the production architecture that addresses these limitations.

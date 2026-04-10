@@ -45,6 +45,7 @@ The current synchronous flow blocks the HTTP request during AI analysis. At scal
 
 **Target architecture:**
 
+```text
 POST /incidents
 │
 ▼
@@ -56,6 +57,7 @@ Triage Worker (separate .NET Worker Service)
 ├──▶ AI API call
 ├──▶ Ticket creation
 └──▶ Notification dispatch
+```
 
 This decouples ingestion from processing, allows multiple triage workers to run in parallel, and makes the system resilient to AI API slowdowns.
 
